@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حاسبة المعدل الجامعي | الجزائر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Playfair+Display:wght@400;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg-primary: #05050d;
+    --bg-secondary: #0d0d1a;
+    --bg-card: rgba(255,255,255,0.04);
+    --gold-1: #f0c060;
+    --gold-2: #c9893a;
+    --gold-3: #7a4f1e;
+    --blue-accent: #4a9eff;
+    --blue-dim: rgba(74,158,255,0.15);
+    --text-primary: #f0ece4;
+    --text-secondary: rgba(240,236,228,0.6);
+    --text-dim: rgba(240,236,228,0.3);
+    --glass: rgba(255,255,255,0.05);
+    --glass-border: rgba(255,255,255,0.1);
+    --glass-hover: rgba(255,255,255,0.08);
+    --danger: #ff6b6b;
+    --success: #6bffb8;
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Tajawal', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* ── Custom Cursor ── */
+  #cursor {
+    position: fixed; width: 12px; height: 12px;
+    background: var(--gold-1); border-radius: 50%;
+    pointer-events: none; z-index: 9999;
+    transform: translate(-50%,-50%);
+    transition: width .2s, height .2s, opacity .2s;
+    mix-blend-mode: difference;
+  }
+  #cursor-trail {
+    position: fixed; width: 36px; height: 36px;
+    border: 1px solid rgba(240,192,96,0.4); border-radius: 50%;
+    pointer-events: none; z-index: 9998;
+    transform: translate(-50%,-50%);
+    transition: left .12s ease, top .12s ease;
+  }
+
+  /* ── Background Canvas ── */
+  #bg-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Grain Overlay ── */
+  .grain {
+    position: fixed; inset: 0; z-index: 1;
+    opacity: .035; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 200px;
+  }
+
+  /* ── Ambient Orbs ── */
+  .orb {
+    position: fixed; border-radius: 50%;
+    filter: blur(80px); pointer-events: none; z-index: 0;
+    animation: orbFloat linear infinite;
+  }
+  .orb-1 { width:500px; height:500px; background:radial-gradient(circle,rgba(200,130,40,.18),transparent 70%); top:-100px; right:-150px; animation-duration:25s; }
+  .orb-2 { width:400px; height:400px; background:radial-gradient(circle,rgba(74,158,255,.1),transparent 70%); bottom:-100px; left:-100px; animation-duration:20s; animation-delay:-8s; }
+  .orb-3 { width:300px; height:300px; background:radial-gradient(circle,rgba(240,192,96,.08),transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); animation-duration:30s; animation-delay:-15s; }
+
+  @keyframes orbFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33%      { transform: translate(30px,-40px) scale(1.05); }
+    66%      { transform: translate(-20px,20px) scale(.95); }
+  }
+
+  /* ── Wrapper ── */
+  .wrapper { position: relative; z-index: 10; }
+
+  /* ── Header ── */
+  header {
+    text-align: center; padding: 5rem 2rem 2rem;
+    animation: fadeDown .8s ease both;
+  }
+
+  .badge {
+    display: inline-flex; align-items: center; gap:.5rem;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    padding: .4rem 1.2rem; border-radius: 100px;
+    font-size: .78rem; letter-spacing:.08em; color: var(--gold-1);
+    margin-bottom: 2rem; backdrop-filter: blur(12px);
+    text-transform: uppercase;
+    animation: fadeDown .6s ease .2s both;
+  }
+  .badge::before { content:'✦'; font-size:.6rem; }
+
+  h1.hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.8rem, 7vw, 6rem);
+    font-weight: 900; line-height: 1.1;
+    background: linear-gradient(135deg, #fff 20%, var(--gold-1) 60%, var(--gold-2) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+    animation: fadeDown .7s ease .3s both;
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem; color: var(--text-secondary);
+    max-width: 560px; margin: 0 auto 1.5rem;
+    animation: fadeDown .7s ease .4s both;
+    line-height: 1.7;
+  }
+
+  .hero-line {
+    width: 80px; height: 2px; margin: 0 auto 3rem;
+    background: linear-gradient(90deg, transparent, var(--gold-1), transparent);
+    animation: fadeDown .7s ease .5s both;
+  }
+
+  /* ── Nav Tabs ── */
+  .tabs {
+    display: flex; justify-content: center; gap: .75rem;
+    padding: 0 1rem; flex-wrap: wrap;
+    animation: fadeUp .7s ease .6s both;
+  }
+
+  .tab-btn {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    color: var(--text-secondary); padding: .65rem 1.6rem;
+    border-radius: 100px; cursor: pointer; font-family: 'Tajawal', sans-serif;
+    font-size: .9rem; transition: all .3s ease; backdrop-filter: blur(12px);
+    font-weight: 500;
+  }
+  .tab-btn:hover { background: var(--glass-hover); color: var(--text-primary); }
+  .tab-btn.active {
+    background: linear-gradient(135deg, var(--gold-2), var(--gold-3));
+    border-color: var(--gold-1); color: #fff; font-weight: 700;
+    box-shadow: 0 0 30px rgba(200,138,58,.3);
+  }
+
+  /* ── Main Grid ── */
+  .main-grid {
+    display: grid; grid-template-columns: 1fr 380px;
+    gap: 1.5rem; max-width: 1100px; margin: 3rem auto;
+    padding: 0 1.5rem;
+    animation: fadeUp .7s ease .7s both;
+  }
+  @media(max-width:900px){ .main-grid { grid-template-columns:1fr; } }
+
+  /* ── Glass Panel ── */
+  .panel {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 2rem;
+    position: relative; overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, transparent 60%);
+    pointer-events: none; border-radius: inherit;
+  }
+
+  .panel-title {
+    font-size: 1.1rem; font-weight: 700; color: var(--gold-1);
+    margin-bottom: 1.5rem; display: flex; align-items: center; gap: .6rem;
+  }
+  .panel-title span { font-size: 1.2rem; }
+
+  /* ── System Selector ── */
+  .system-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: .75rem; margin-bottom: 2rem;
+  }
+
+  .system-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 1rem; cursor: pointer;
+    transition: all .3s ease; text-align: center;
+  }
+  .system-card:hover { border-color: rgba(240,192,96,.4); background: var(--glass-hover); }
+  .system-card.active {
+    border-color: var(--gold-1);
+    background: rgba(200,138,58,.12);
+    box-shadow: inset 0 0 20px rgba(240,192,96,.05), 0 0 20px rgba(200,138,58,.15);
+  }
+  .system-card .icon { font-size: 1.8rem; margin-bottom:.5rem; }
+  .system-card .label { font-size: .85rem; font-weight: 700; color: var(--text-primary); }
+  .system-card .desc { font-size: .72rem; color: var(--text-dim); margin-top:.2rem; }
+
+  /* ── Add Subject Section ── */
+  .section-label {
+    font-size: .75rem; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--text-dim); margin-bottom: .6rem;
+  }
+
+  .input-row {
+    display: grid; gap: .6rem; margin-bottom: .8rem;
+  }
+  .input-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .input-row-2 { grid-template-columns: 1fr 1fr; }
+
+  .field-group { display: flex; flex-direction: column; gap: .3rem; }
+  .field-group label { font-size: .72rem; color: var(--text-dim); }
+
+  input[type="text"], input[type="number"], select {
+    background: rgba(255,255,255,.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px; color: var(--text-primary);
+    padding: .65rem .9rem; font-family: 'Tajawal', sans-serif;
+    font-size: .88rem; width: 100%;
+    transition: border-color .25s, box-shadow .25s, background .25s;
+    outline: none;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus {
+    border-color: var(--gold-1);
+    box-shadow: 0 0 0 3px rgba(240,192,96,.12);
+    background: rgba(255,255,255,.08);
+  }
+  input::placeholder { color: var(--text-dim); }
+  select option { background: #1a1a2e; }
+
+  /* ── Grade Type ── */
+  .grade-type-toggle {
+    display: flex; gap: .5rem; margin-bottom: 1.2rem;
+  }
+  .type-pill {
+    flex:1; background: var(--bg-card); border: 1px solid var(--glass-border);
+    padding: .5rem; border-radius: 8px; cursor: pointer; text-align: center;
+    font-size: .76rem; color: var(--text-dim); transition: all .25s;
+  }
+  .type-pill.active { background: rgba(200,138,58,.15); border-color: var(--gold-2); color: var(--gold-1); font-weight: 700; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: flex; align-items: center; justify-content: center;
+    gap: .5rem; padding: .75rem 1.5rem;
+    border-radius: 12px; font-family: 'Tajawal', sans-serif;
+    font-size: .9rem; font-weight: 700; cursor: pointer;
+    transition: all .3s ease; border: none; width: 100%;
+  }
+  .btn-gold {
+    background: linear-gradient(135deg, var(--gold-1), var(--gold-2));
+    color: #1a0e00;
+    box-shadow: 0 4px 20px rgba(200,138,58,.3);
+  }
+  .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(200,138,58,.45); filter: brightness(1.1); }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover { background: var(--glass-hover); color: var(--text-primary); }
+  .btn-danger {
+    background: rgba(255,107,107,.1); border: 1px solid rgba(255,107,107,.3);
+    color: var(--danger); padding: .4rem .8rem; width: auto; font-size: .78rem;
+    border-radius: 8px;
+  }
+  .btn-danger:hover { background: rgba(255,107,107,.2); }
+
+  /* ── Subject List ── */
+  .subjects-list { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1.5rem; }
+
+  .subject-card {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm); padding: 1rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; transition: all .3s ease;
+    animation: slideInRight .3s ease both;
+    position: relative; overflow: hidden;
+  }
+  .subject-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; border-radius: 0 2px 2px 0;
+    background: linear-gradient(180deg, var(--gold-1), var(--gold-2));
+  }
+  .subject-card:hover { border-color: rgba(240,192,96,.3); background: var(--glass-hover); }
+  .subject-card.eliminatoire::before { background: linear-gradient(180deg, var(--danger), #c0392b); }
+  .subject-card.eliminatoire { border-color: rgba(255,107,107,.25); }
+
+  .subj-info { flex: 1; }
+  .subj-name { font-size: .9rem; font-weight: 700; color: var(--text-primary); margin-bottom: .2rem; }
+  .subj-details { font-size: .75rem; color: var(--text-dim); display: flex; gap: .8rem; flex-wrap: wrap; }
+  .subj-details span { display: flex; align-items: center; gap: .2rem; }
+
+  .subj-grade {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.4rem; font-weight: 700;
+    min-width: 60px; text-align: center;
+  }
+  .grade-pass { color: var(--success); }
+  .grade-fail { color: var(--danger); }
+  .grade-mid  { color: var(--gold-1); }
+
+  /* ── Empty State ── */
+  .empty-state {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--text-dim);
+  }
+  .empty-state .empty-icon { font-size: 3rem; margin-bottom: 1rem; opacity: .4; }
+  .empty-state p { font-size: .9rem; }
+
+  /* ── Sidebar Results ── */
+  .result-ring-wrap {
+    display: flex; justify-content: center; margin: 1rem 0 1.5rem;
+  }
+
+  .ring-svg { width: 160px; height: 160px; transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 10; }
+  .ring-progress {
+    fill: none; stroke: url(#goldGrad); stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 440; stroke-dashoffset: 440;
+    transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1);
+    filter: drop-shadow(0 0 8px rgba(240,192,96,.5));
+  }
+
+  .ring-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transform: rotate(0deg);
+  }
+  .ring-wrap-inner { position: relative; width: 160px; height: 160px; }
+
+  .avg-number {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.4rem; font-weight: 700;
+    background: linear-gradient(135deg, #fff, var(--gold-1));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; line-height: 1;
+  }
+  .avg-label { font-size: .7rem; color: var(--text-dim); margin-top:.2rem; }
+
+  /* ── Stats Grid ── */
+  .stats-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: .6rem; margin-bottom: 1.5rem;
+  }
+
+  .stat-box {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm); padding: .9rem;
+    text-align: center; transition: all .3s;
+  }
+  .stat-box:hover { border-color: rgba(240,192,96,.3); }
+  .stat-val { font-family: 'Space Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--gold-1); }
+  .stat-lbl { font-size: .7rem; color: var(--text-dim); margin-top: .2rem; }
+
+  /* ── Verdict Banner ── */
+  .verdict {
+    border-radius: var(--radius-sm); padding: 1rem 1.2rem;
+    display: flex; align-items: center; gap: .8rem;
+    font-size: .9rem; font-weight: 700; margin-bottom: 1rem;
+    transition: all .5s ease;
+  }
+  .verdict-pass { background: rgba(107,255,184,.08); border: 1px solid rgba(107,255,184,.25); color: var(--success); }
+  .verdict-fail { background: rgba(255,107,107,.08); border: 1px solid rgba(255,107,107,.25); color: var(--danger); }
+  .verdict-warn { background: rgba(240,192,96,.08); border: 1px solid rgba(240,192,96,.25); color: var(--gold-1); }
+  .verdict-empty { background: var(--bg-card); border: 1px solid var(--glass-border); color: var(--text-dim); }
+  .verdict-icon { font-size: 1.4rem; }
+
+  /* ── Info Panel ── */
+  .info-section {
+    max-width: 1100px; margin: 0 auto 4rem; padding: 0 1.5rem;
+    animation: fadeUp .7s ease .9s both;
+  }
+
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+
+  .info-card {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: var(--radius); padding: 1.5rem;
+    backdrop-filter: blur(12px); transition: all .3s ease;
+  }
+  .info-card:hover { transform: translateY(-4px); border-color: rgba(240,192,96,.3); box-shadow: 0 20px 40px rgba(0,0,0,.3); }
+  .info-card-icon { font-size: 2rem; margin-bottom: .8rem; }
+  .info-card h3 { font-size: 1rem; font-weight: 700; color: var(--gold-1); margin-bottom: .5rem; }
+  .info-card p { font-size: .83rem; color: var(--text-secondary); line-height: 1.7; }
+
+  /* ── Formula Cards ── */
+  .formula-box {
+    background: rgba(0,0,0,.3); border: 1px solid rgba(240,192,96,.2);
+    border-radius: 10px; padding: .8rem 1rem;
+    font-family: 'Space Mono', monospace; font-size: .78rem;
+    color: var(--gold-1); margin: .6rem 0; letter-spacing: .02em;
+    text-align: center; line-height: 1.6;
+  }
+
+  /* ── Toast Notification ── */
+  #toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--glass); border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px); padding: .8rem 1.8rem;
+    border-radius: 100px; font-size: .88rem; color: var(--text-primary);
+    z-index: 1000; transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── Separator ── */
+  .sep { height: 1px; background: linear-gradient(90deg, transparent, var(--glass-border), transparent); margin: 1.5rem 0; }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center; padding: 2rem;
+    color: var(--text-dim); font-size: .78rem;
+    border-top: 1px solid var(--glass-border);
+    margin-top: 2rem;
+  }
+  footer span { color: var(--gold-1); }
+
+  /* ── Keyframes ── */
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(30px);  } to { opacity:1; transform:translateY(0); } }
+  @keyframes slideInRight { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+
+  /* ── Number Counter ── */
+  .counter-anim { animation: numPop .5s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes numPop { from { transform:scale(.7); opacity:0; } to { transform:scale(1); opacity:1; } }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(240,192,96,.3); border-radius:10px; }
+
+  .subjects-scroll { max-height: 400px; overflow-y: auto; padding-left: 2px; }
+
+  .tag-eliminatoire {
+    display: inline-flex; align-items: center; gap:.2rem;
+    background: rgba(255,107,107,.12); border: 1px solid rgba(255,107,107,.3);
+    color: var(--danger); font-size: .65rem; padding: .15rem .5rem;
+    border-radius: 100px; font-weight: 700;
+  }
+
+  .warning-box {
+    background: rgba(255,107,107,.06); border: 1px solid rgba(255,107,107,.2);
+    border-radius: 10px; padding: .8rem 1rem;
+    font-size: .8rem; color: rgba(255,150,150,.8); line-height: 1.6;
+    margin-top: .8rem;
+  }
+
+  .btn-row { display: flex; gap: .6rem; }
+  .btn-row .btn { flex:1; }
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
+
+<!-- Background -->
+<canvas id="bg-canvas"></canvas>
+<div class="grain"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- Toast -->
+<div id="toast">✓ تم بنجاح</div>
+
+<div class="wrapper">
+
+  <!-- ══ HEADER ══ -->
+  <header>
+    <div class="badge">نظام المهندس دولة · Ingénieur d'État · الجزائر</div>
+    <h1 class="hero-title">حاسبة المعدل</h1>
+    <p class="hero-subtitle">احسب معدلك الجامعي بدقة مطلقة وبدون أي خطأ — مصمم خصيصاً للنظام الجزائري</p>
+    <div class="hero-line"></div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchSystem('ingenieur')">🎓 مهندس دولة</button>
+      <button class="tab-btn" onclick="switchSystem('lmd')">📚 نظام LMD</button>
+    </div>
+  </header>
+
+  <!-- ══ MAIN GRID ══ -->
+  <div class="main-grid">
+
+    <!-- Left: Input Panel -->
+    <div>
+
+      <!-- System Info -->
+      <div class="panel" style="margin-bottom:1.5rem;">
+        <div class="panel-title"><span>⚙️</span> نوع النظام المختار</div>
+        <div class="system-grid">
+          <div class="system-card active" id="card-ing" onclick="switchSystem('ingenieur')">
+            <div class="icon">🏗️</div>
+            <div class="label">مهندس دولة</div>
+            <div class="desc">Ingénieur d'État</div>
+          </div>
+          <div class="system-card" id="card-lmd" onclick="switchSystem('lmd')">
+            <div class="icon">📖</div>
+            <div class="label">ليسانس / ماستر</div>
+            <div class="desc">Système LMD</div>
+          </div>
+        </div>
+
+        <div id="system-desc-ing">
+          <div class="formula-box">المعدل = مجموع (معدل المادة × المعامل) ÷ مجموع المعاملات</div>
+          <p style="font-size:.78rem; color:var(--text-dim); margin-top:.6rem; line-height:1.7">
+            في نظام المهندس: لا وجود لنظام الوحدات (Crédits). الحساب مباشر بالمعاملات السنوية أو السداسية.
+          </p>
+        </div>
+        <div id="system-desc-lmd" style="display:none">
+          <div class="formula-box">المعدل = مجموع (معدل المادة × المعامل) ÷ مجموع المعاملات</div>
+          <p style="font-size:.78rem; color:var(--text-dim); margin-top:.6rem; line-height:1.7">
+            نظام LMD: الحساب يعتمد على الوحدات التعليمية (UE) مع نظام الأرصدة (Crédits).
+          </p>
+        </div>
+      </div>
+
+      <!-- Add Subject Panel -->
+      <div class="panel" style="margin-bottom:1.5rem;">
+        <div class="panel-title"><span>➕</span> إضافة مادة جديدة</div>
+
+        <div class="input-row input-row-2">
+          <div class="field-group">
+            <label>اسم المادة</label>
+            <input type="text" id="subj-name" placeholder="مثال: انتقال الحرارة">
+          </div>
+          <div class="field-group">
+            <label>المعامل (Coefficient)</label>
+            <input type="number" id="subj-coeff" placeholder="1 — 5" min="1" max="10" value="3">
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:.4rem">نوع التقييم</div>
+        <div class="grade-type-toggle">
+          <div class="type-pill active" id="type-ct" onclick="setType('CT')">Cours + TD</div>
+          <div class="type-pill" id="type-ctp" onclick="setType('CTP')">Cours + TD + TP</div>
+          <div class="type-pill" id="type-tp" onclick="setType('TP')">TP فقط</div>
+        </div>
+
+        <div class="input-row input-row-3" id="grades-row">
+          <div class="field-group">
+            <label id="lbl-exam">الامتحان (60%)</label>
+            <input type="number" id="grade-exam" placeholder="0 — 20" min="0" max="20" step="0.25">
+          </div>
+          <div class="field-group" id="field-td">
+            <label>الرقابة TD (40%)</label>
+            <input type="number" id="grade-td" placeholder="0 — 20" min="0" max="20" step="0.25">
+          </div>
+          <div class="field-group" id="field-tp" style="display:none">
+            <label>TP (20%)</label>
+            <input type="number" id="grade-tp" placeholder="0 — 20" min="0" max="20" step="0.25">
+          </div>
+        </div>
+
+        <div style="margin-top:.5rem">
+          <button class="btn btn-gold" onclick="addSubject()">
+            <span>✦</span> إضافة المادة
+          </button>
+        </div>
+      </div>
+
+      <!-- Subjects List -->
+      <div class="panel">
+        <div class="panel-title" style="justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:.6rem"><span>📋</span> قائمة المواد</div>
+          <span id="subjects-count" style="font-size:.75rem;color:var(--text-dim);font-family:'Space Mono',monospace">0 مادة</span>
+        </div>
+
+        <div class="subjects-scroll">
+          <div id="subjects-list">
+            <div class="empty-state">
+              <div class="empty-icon">📂</div>
+              <p>لم تتم إضافة أي مادة بعد<br><span style="font-size:.75rem;color:var(--text-dim)">ابدأ بإضافة مواد من الأعلى</span></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+        <div class="btn-row">
+          <button class="btn btn-gold" onclick="calculate()" id="calc-btn" style="opacity:.5">
+            🔢 احسب المعدل
+          </button>
+          <button class="btn btn-ghost" onclick="resetAll()">🗑️ مسح</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Results Sidebar -->
+    <div>
+      <div class="panel" style="position:sticky;top:1rem">
+        <div class="panel-title"><span>📊</span> النتيجة</div>
+
+        <!-- Ring -->
+        <div class="result-ring-wrap">
+          <div class="ring-wrap-inner">
+            <svg class="ring-svg" viewBox="0 0 160 160">
+              <defs>
+                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#f0c060"/>
+                  <stop offset="100%" stop-color="#c9893a"/>
+                </linearGradient>
+              </defs>
+              <circle class="ring-bg" cx="80" cy="80" r="70"/>
+              <circle class="ring-progress" id="ring-progress" cx="80" cy="80" r="70"/>
+            </svg>
+            <div class="ring-center">
+              <div class="avg-number" id="avg-display">—</div>
+              <div class="avg-label">/ 20</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Verdict -->
+        <div class="verdict verdict-empty" id="verdict">
+          <div class="verdict-icon">💫</div>
+          <div>أضف مواد واضغط "احسب"</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-val" id="stat-subjects">0</div>
+            <div class="stat-lbl">عدد المواد</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" id="stat-coeffs">0</div>
+            <div class="stat-lbl">مجموع المعاملات</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" id="stat-best">—</div>
+            <div class="stat-lbl">أعلى علامة</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val" id="stat-worst">—</div>
+            <div class="stat-lbl">أدنى علامة</div>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- Eliminatoire Warning -->
+        <div id="elim-warning" style="display:none" class="warning-box">
+          ⚠️ يوجد مادة أو أكثر بعلامة <strong>أقل من 05/20</strong> (علامة إقصائية). ستُحرم من التعويض التلقائي وقد تُحال على الاستدراك.
+        </div>
+
+        <!-- Formula reminder -->
+        <div style="font-size:.72rem; color:var(--text-dim); line-height:1.7; margin-top:.6rem;">
+          <div style="margin-bottom:.3rem;color:var(--text-secondary);font-weight:700;">طريقة الحساب:</div>
+          📌 امتحان: <strong style="color:var(--gold-1)">60%</strong> · TD: <strong style="color:var(--gold-1)">40%</strong><br>
+          📌 إذا كان CT+TP: امتحان <strong style="color:var(--gold-1)">60%</strong>, TD <strong style="color:var(--gold-1)">20%</strong>, TP <strong style="color:var(--gold-1)">20%</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ INFO SECTION ══ -->
+  <div class="info-section">
+    <div style="text-align:center; margin-bottom:2rem;">
+      <h2 style="font-family:'Playfair Display',serif; font-size:2rem; font-weight:700; background:linear-gradient(135deg,#fff,var(--gold-1)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">
+        قواعد نظام المهندس
+      </h2>
+      <p style="color:var(--text-dim); font-size:.85rem; margin-top:.5rem">كل ما تحتاج معرفته لتجنب الأخطاء الحسابية</p>
+    </div>
+
+    <div class="info-grid">
+
+      <div class="info-card">
+        <div class="info-card-icon">🧮</div>
+        <h3>الحالة 1: Cours + TD</h3>
+        <div class="formula-box" style="text-align:right; direction:ltr; font-size:.7rem">
+          Moy = (Exam × 0.6) + (TD × 0.4)
+        </div>
+        <p>النسبة الرسمية المعتمدة: <strong style="color:var(--gold-1)">60%</strong> للامتحان و<strong style="color:var(--gold-1)">40%</strong> للرقابة المستمرة (TD)</p>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-icon">🔬</div>
+        <h3>الحالة 2: Cours + TD + TP</h3>
+        <div class="formula-box" style="text-align:right; direction:ltr; font-size:.7rem">
+          Moy = (Exam × 0.6) + (TD × 0.2) + (TP × 0.2)
+        </div>
+        <p>الامتحان <strong style="color:var(--gold-1)">60%</strong> والأعمال الموجهة والتطبيقية <strong style="color:var(--gold-1)">20%</strong> لكل منهما</p>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-icon">⚗️</div>
+        <h3>الحالة 3: TP فقط</h3>
+        <div class="formula-box" style="text-align:right; direction:ltr; font-size:.7rem">
+          Moy = Note TP (100%)
+        </div>
+        <p>مادة عبارة عن ورشة عمل مستقلة كبعض مواد الكيمياء أو ميكانيك الموائع</p>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-icon">⚠️</div>
+        <h3>العلامة الإقصائية</h3>
+        <p>الحصول على <strong style="color:var(--danger)">أقل من 05/20</strong> في أي مادة أساسية يُقصيك من التعويض التلقائي ويُلزمك بالاستدراك (Rattrapage) مهما كان معدلك العام.</p>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-icon">✅</div>
+        <h3>شرط النجاح</h3>
+        <p>تحقق معدل <strong style="color:var(--success)">10.00/20 أو أكثر</strong> دون أي علامة إقصائية. النجاح بالتعويض ممكن إذا كان المجموع الموزون يفوق الحد الأدنى.</p>
+      </div>
+
+      <div class="info-card">
+        <div class="info-card-icon">🎯</div>
+        <h3>القاعدة الذهبية</h3>
+        <p>لا وجود لنظام الوحدات والأرصدة (Crédits) في نظام المهندس. الحساب مباشر: <strong style="color:var(--gold-1)">مجموع (المعدل × المعامل) ÷ مجموع المعاملات</strong></p>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    صُمم بـ <span>✦</span> للطلاب الجزائريين · حاسبة المعدل الجامعي الدقيقة
+  </footer>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  Cursor
+// ══════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+const trail  = document.getElementById('cursor-trail');
+let mx=0,my=0;
+document.addEventListener('mousemove', e => {
+  mx=e.clientX; my=e.clientY;
+  cursor.style.left=mx+'px'; cursor.style.top=my+'px';
+  setTimeout(()=>{ trail.style.left=mx+'px'; trail.style.top=my+'px'; },60);
+});
+document.addEventListener('mousedown',()=>{ cursor.style.width='8px'; cursor.style.height='8px'; });
+document.addEventListener('mouseup',  ()=>{ cursor.style.width='12px'; cursor.style.height='12px'; });
+
+// ══════════════════════════════════════════
+//  Particle Background
+// ══════════════════════════════════════════
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W,H, particles=[];
+
+function resizeCanvas(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+resizeCanvas(); window.addEventListener('resize',resizeCanvas);
+
+class Particle {
+  constructor(){
+    this.x = Math.random()*W;
+    this.y = Math.random()*H;
+    this.r = Math.random()*1.5+.3;
+    this.vx= (Math.random()-.5)*.2;
+    this.vy= (Math.random()-.5)*.2;
+    this.alpha = Math.random()*.4+.1;
+    this.color = Math.random()>.6 ? '#f0c060' : '#4a9eff';
+  }
+  update(){
+    this.x+=this.vx; this.y+=this.vy;
+    if(this.x<0) this.x=W; if(this.x>W) this.x=0;
+    if(this.y<0) this.y=H; if(this.y>H) this.y=0;
+  }
+  draw(){
+    ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle = this.color; ctx.globalAlpha=this.alpha;
+    ctx.fill(); ctx.globalAlpha=1;
+  }
+}
+
+for(let i=0;i<90;i++) particles.push(new Particle());
+
+function drawLines(){
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const dx=particles[i].x-particles[j].x;
+      const dy=particles[i].y-particles[j].y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<120){
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x,particles[i].y);
+        ctx.lineTo(particles[j].x,particles[j].y);
+        ctx.strokeStyle='rgba(240,192,96,'+(0.06*(1-dist/120))+')';
+        ctx.lineWidth=.5; ctx.stroke();
+      }
+    }
+  }
+}
+
+function animateParticles(){
+  ctx.clearRect(0,0,W,H);
+  particles.forEach(p=>{ p.update(); p.draw(); });
+  drawLines();
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ══════════════════════════════════════════
+//  State
+// ══════════════════════════════════════════
+let subjects = [];
+let currentSystem = 'ingenieur';
+let currentType   = 'CT';
+
+// ══════════════════════════════════════════
+//  System Switch
+// ══════════════════════════════════════════
+function switchSystem(sys){
+  currentSystem = sys;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', (sys==='ingenieur'&&i===0)||(sys==='lmd'&&i===1));
+  });
+  document.getElementById('card-ing').classList.toggle('active', sys==='ingenieur');
+  document.getElementById('card-lmd').classList.toggle('active', sys==='lmd');
+  document.getElementById('system-desc-ing').style.display = sys==='ingenieur'?'':'none';
+  document.getElementById('system-desc-lmd').style.display = sys==='lmd'?'':'none';
+  subjects=[]; renderSubjects(); updateStats(); resetResult();
+  showToast(sys==='ingenieur'?'تم التبديل إلى نظام المهندس دولة':'تم التبديل إلى نظام LMD');
+}
+
+// ══════════════════════════════════════════
+//  Grade Type
+// ══════════════════════════════════════════
+function setType(t){
+  currentType=t;
+  ['ct','ctp','tp'].forEach(id=> document.getElementById('type-'+id).classList.remove('active'));
+  document.getElementById('type-'+t.toLowerCase()).classList.add('active');
+
+  const examLbl = document.getElementById('lbl-exam');
+  const tdField  = document.getElementById('field-td');
+  const tpField  = document.getElementById('field-tp');
+  const gradeRow = document.getElementById('grades-row');
+
+  if(t==='CT'){
+    examLbl.textContent='الامتحان (60%)'; tdField.style.display=''; tpField.style.display='none';
+    gradeRow.className='input-row input-row-2';
+  } else if(t==='CTP'){
+    examLbl.textContent='الامتحان (60%)'; tdField.style.display=''; tpField.style.display='';
+    gradeRow.className='input-row input-row-3';
+    document.querySelector('#field-td label').textContent='TD (20%)';
+  } else {
+    examLbl.textContent='علامة TP (100%)'; tdField.style.display='none'; tpField.style.display='none';
+    gradeRow.className='input-row input-row-2';
+  }
+}
+
+// ══════════════════════════════════════════
+//  Calc subject grade
+// ══════════════════════════════════════════
+function calcSubjGrade(type, exam, td, tp){
+  if(type==='CT')  return exam*0.6 + td*0.4;
+  if(type==='CTP') return exam*0.6 + td*0.2 + tp*0.2;
+  if(type==='TP')  return exam;
+}
+
+// ══════════════════════════════════════════
+//  Add Subject
+// ══════════════════════════════════════════
+function addSubject(){
+  const name  = document.getElementById('subj-name').value.trim();
+  const coeff = parseFloat(document.getElementById('subj-coeff').value);
+  const exam  = parseFloat(document.getElementById('grade-exam').value);
+  const td    = parseFloat(document.getElementById('grade-td').value)||0;
+  const tp    = parseFloat(document.getElementById('grade-tp').value)||0;
+
+  if(!name){ showToast('⚠️ أدخل اسم المادة'); return; }
+  if(!coeff||coeff<1){ showToast('⚠️ المعامل يجب أن يكون 1 على الأقل'); return; }
+  if(isNaN(exam)||exam<0||exam>20){ showToast('⚠️ علامة الامتحان غير صحيحة (0-20)'); return; }
+  if(currentType==='CT' && (isNaN(td)||td<0||td>20)){ showToast('⚠️ علامة TD غير صحيحة'); return; }
+  if(currentType==='CTP' && (isNaN(td)||td<0||td>20||isNaN(tp)||tp<0||tp>20)){ showToast('⚠️ تحقق من علامات TD و TP'); return; }
+
+  const grade = parseFloat(calcSubjGrade(currentType,exam,td,tp).toFixed(2));
+
+  subjects.push({ name, coeff, type:currentType, exam, td, tp, grade });
+  renderSubjects();
+  updateStats();
+
+  // Clear inputs
+  document.getElementById('subj-name').value='';
+  document.getElementById('grade-exam').value='';
+  document.getElementById('grade-td').value='';
+  document.getElementById('grade-tp').value='';
+
+  showToast('✦ تمت إضافة "'+name+'" بنجاح');
+}
+
+// ══════════════════════════════════════════
+//  Render Subjects
+// ══════════════════════════════════════════
+function renderSubjects(){
+  const list = document.getElementById('subjects-list');
+  document.getElementById('subjects-count').textContent = subjects.length + ' مادة';
+  document.getElementById('calc-btn').style.opacity = subjects.length?'1':'.5';
+
+  if(!subjects.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📂</div><p>لم تتم إضافة أي مادة بعد<br><span style="font-size:.75rem;color:var(--text-dim)">ابدأ بإضافة مواد من الأعلى</span></p></div>`;
+    return;
+  }
+
+  list.innerHTML = subjects.map((s,i)=>{
+    const isElim = s.grade < 5;
+    const gradeClass = s.grade>=10?'grade-pass':s.grade>=7?'grade-mid':'grade-fail';
+    const typeLabel = s.type==='CT'?'C+TD': s.type==='CTP'?'C+TD+TP':'TP';
+    const detailStr = s.type==='CT'
+      ? `امتحان: ${s.exam} · TD: ${s.td}`
+      : s.type==='CTP'
+      ? `امتحان: ${s.exam} · TD: ${s.td} · TP: ${s.tp}`
+      : `TP: ${s.exam}`;
+
+    return `<div class="subject-card ${isElim?'eliminatoire':''}" style="animation-delay:${i*.05}s">
+      <div class="subj-info">
+        <div class="subj-name">${s.name} ${isElim?'<span class="tag-eliminatoire">⚠ إقصائية</span>':''}</div>
+        <div class="subj-details">
+          <span>معامل: <strong style="color:var(--gold-1)">${s.coeff}</strong></span>
+          <span>${detailStr}</span>
+          <span style="color:rgba(255,255,255,.2)">${typeLabel}</span>
+        </div>
+      </div>
+      <div class="subj-grade ${gradeClass}">${s.grade.toFixed(2)}</div>
+      <button class="btn btn-danger" onclick="removeSubject(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  Remove Subject
+// ══════════════════════════════════════════
+function removeSubject(i){
+  subjects.splice(i,1);
+  renderSubjects(); updateStats();
+  if(!subjects.length) resetResult();
+}
+
+// ══════════════════════════════════════════
+//  Update Stats
+// ══════════════════════════════════════════
+function updateStats(){
+  document.getElementById('stat-subjects').textContent = subjects.length;
+  const totalCoeff = subjects.reduce((a,s)=>a+s.coeff,0);
+  document.getElementById('stat-coeffs').textContent = totalCoeff;
+  if(subjects.length){
+    const grades = subjects.map(s=>s.grade);
+    document.getElementById('stat-best').textContent  = Math.max(...grades).toFixed(2);
+    document.getElementById('stat-worst').textContent = Math.min(...grades).toFixed(2);
+  } else {
+    document.getElementById('stat-best').textContent='—';
+    document.getElementById('stat-worst').textContent='—';
+  }
+}
+
+// ══════════════════════════════════════════
+//  Calculate
+// ══════════════════════════════════════════
+function calculate(){
+  if(!subjects.length){ showToast('⚠️ أضف مواد أولاً'); return; }
+
+  const totalWeighted = subjects.reduce((a,s)=>a+(s.grade*s.coeff),0);
+  const totalCoeff    = subjects.reduce((a,s)=>a+s.coeff,0);
+  const avg           = totalWeighted/totalCoeff;
+  const hasElim       = subjects.some(s=>s.grade<5);
+
+  // Ring
+  const progress = document.getElementById('ring-progress');
+  const circumference = 2*Math.PI*70;
+  const offset = circumference - (avg/20)*circumference;
+  progress.style.strokeDashoffset = offset;
+
+  // Number display
+  animateNumber('avg-display', avg.toFixed(2));
+
+  // Verdict
+  const vEl = document.getElementById('verdict');
+  if(hasElim){
+    vEl.className='verdict verdict-warn';
+    vEl.innerHTML='<div class="verdict-icon">⚠️</div><div>علامة إقصائية — استدراك مطلوب</div>';
+    document.getElementById('elim-warning').style.display='block';
+  } else if(avg>=10){
+    vEl.className='verdict verdict-pass';
+    vEl.innerHTML='<div class="verdict-icon">🎉</div><div>ناجح — معدل مقبول</div>';
+    document.getElementById('elim-warning').style.display='none';
+  } else {
+    vEl.className='verdict verdict-fail';
+    vEl.innerHTML='<div class="verdict-icon">📉</div><div>راسب — المعدل أقل من 10</div>';
+    document.getElementById('elim-warning').style.display='none';
+  }
+
+  showToast('🔢 تم حساب المعدل: '+avg.toFixed(2)+'/20');
+}
+
+function animateNumber(id, target){
+  const el = document.getElementById(id);
+  let start=0; const steps=40;
+  const targetNum=parseFloat(target);
+  const inc=targetNum/steps;
+  let cur=0;
+  const iv=setInterval(()=>{
+    cur+=inc; if(cur>=targetNum){ cur=targetNum; clearInterval(iv); }
+    el.textContent=cur.toFixed(2);
+  },20);
+  el.classList.add('counter-anim');
+  setTimeout(()=>el.classList.remove('counter-anim'),600);
+}
+
+// ══════════════════════════════════════════
+//  Reset
+// ══════════════════════════════════════════
+function resetAll(){
+  subjects=[]; renderSubjects(); updateStats(); resetResult();
+  showToast('🗑️ تم مسح جميع المواد');
+}
+
+function resetResult(){
+  document.getElementById('avg-display').textContent='—';
+  document.getElementById('ring-progress').style.strokeDashoffset=440;
+  document.getElementById('verdict').className='verdict verdict-empty';
+  document.getElementById('verdict').innerHTML='<div class="verdict-icon">💫</div><div>أضف مواد واضغط "احسب"</div>';
+  document.getElementById('elim-warning').style.display='none';
+}
+
+// ══════════════════════════════════════════
+//  Toast
+// ══════════════════════════════════════════
+let toastTimeout;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ══════════════════════════════════════════
+//  Init
+// ══════════════════════════════════════════
+setType('CT');
+</script>
+</body>
+</html>
